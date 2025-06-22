@@ -8,7 +8,7 @@ import os
 # ── 設定開始 ──
 # 1) Incoming Webhook URL
 WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", 
-    "https://hooks.slack.com/services/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")
+    "https://hooks.slack.com/services/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")
 
 # 2) 投稿先チャンネル（Webhook で固定している場合は不要）
 # CHANNEL = "#weather"
