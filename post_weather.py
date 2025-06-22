@@ -1,31 +1,42 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import requests
-from datetime import datetime
 import os
+import logging
+from datetime import datetime
+import requests
 
-# ── 設定開始 ──
-# 1) Incoming Webhook URL
-WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", 
-    "https://hooks.slack.com/services/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")
+# ── 設定部分 ─────────────────────────────────────────
+WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
+if not WEBHOOK_URL:
+    raise RuntimeError("環境変数 SLACK_WEBHOOK_URL が設定されていません。")
 
-# 2) 投稿先チャンネル（Webhook で固定している場合は不要）
-# CHANNEL = "#weather"
-
-# 3) 取得元画像のベース URL
 BASE_IMAGE_URL = "https://newsdig.ismcdn.jp/common/weather/latest/3hour/WM3hour_C46218.png"
-# ── 設定終了 ──
 
-def build_image_url():
-    """キャッシュ回避のため、現在時刻を rd パラメータに付与"""
+# ロギング設定
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+# ── 設定部分 ここまで ─────────────────────────────────
+
+def build_image_url() -> str:
+    """
+    キャッシュ回避のため、現在時刻を rd パラメータに付与。
+    例: WM3hour_C46218.png?rd=202506230815
+    """
     ts = datetime.now().strftime("%Y%m%d%H%M")
-    return f"{BASE_IMAGE_URL}?rd={ts}"
+    url = f"{BASE_IMAGE_URL}?rd={ts}"
+    logging.debug(f"生成した画像 URL: {url}")
+    return url
 
 def post_to_slack(image_url: str):
-    """Block Kit の image ブロックで投稿"""
+    """
+    Slack に Block Kit の image ブロックで投稿。
+    HTTP ステータス != 200 の場合は例外発生。
+    """
     payload = {
-        # "channel": CHANNEL,  # 必要なら有効化
         "blocks": [
             {
                 "type": "image",
@@ -34,12 +45,19 @@ def post_to_slack(image_url: str):
             }
         ]
     }
-    resp = requests.post(WEBHOOK_URL, json=payload)
-    resp.raise_for_status()
+    logging.info(f"Slack へ投稿開始: {image_url}")
+    resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
+    if resp.status_code != 200:
+        logging.error(f"Slack 投稿失敗: HTTP {resp.status_code} – {resp.text}")
+        resp.raise_for_status()
+    logging.info("Slack 投稿成功")
 
 def main():
-    img_url = build_image_url()
-    post_to_slack(img_url)
+    try:
+        img_url = build_image_url()
+        post_to_slack(img_url)
+    except Exception as e:
+        logging.exception("スクリプト実行中にエラーが発生しました。")
 
 if __name__ == "__main__":
     main()
