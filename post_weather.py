@@ -15,7 +15,7 @@ if not WEBHOOK_URL:
 # 必要に応じて環境変数で設定する場合:
 # MENTION = os.environ.get("SLACK_MENTION", "<!here>")
 # 今回は全員通知の <!here> を使用
-MENTION = "<!here>"
+MENTION = "<!channel>"
 
 BASE_IMAGE_URL = "https://newsdig.ismcdn.jp/common/weather/latest/3hour/WM3hour_C46218.png"
 
